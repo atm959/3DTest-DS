@@ -1,4 +1,2 @@
-# Set the bit depth to 4 (16 colors)
--gB16
-
+# Set to bitmap
 -gb

@@ -1,4 +1,5 @@
 #include <nds.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <math.h>
@@ -42,9 +43,9 @@ u8 CubeFaces[] = {
 u32 uv[] =
 {
 	
-	TEXTURE_PACK(inttot16(128), 0),
-	TEXTURE_PACK(inttot16(128),inttot16(128)),
-	TEXTURE_PACK(0, inttot16(128)),
+	TEXTURE_PACK(inttot16(16), 0),
+	TEXTURE_PACK(inttot16(16),inttot16(16)),
+	TEXTURE_PACK(0, inttot16(16)),
 	TEXTURE_PACK(0,0)
 };
 
@@ -85,13 +86,16 @@ u32 normals[] =
 }
 
 int main() {	
+	defaultExceptionHandler();
+	consoleDemoInit();
 	
 	int textureID;
-	int i, j;
+	int i, j, k;
 	struct Vector3 camPos;
 	float camRot;
 	struct Vector3 camFace;
 	struct Vector3 camLook;
+	int uvIncreaseTimer;
 
 	//set mode 0, enable BG0 and set it to 3D
 	videoSetMode(MODE_0_3D);
@@ -117,18 +121,18 @@ int main() {
 
 	glGenTextures(1, &textureID);
 	glBindTexture(0, textureID);
-	glTexImage2D(0, 0, GL_RGB, TEXTURE_SIZE_128 , TEXTURE_SIZE_128, 0, TEXGEN_TEXCOORD, (u8*)textureBitmap);
+	glTexImage2D(0, 0, GL_RGB, TEXTURE_SIZE_16, TEXTURE_SIZE_16, 0, TEXGEN_TEXCOORD | GL_TEXTURE_WRAP_S, (u8*)textureBitmap);
 	
 	
 	//any floating point gl call is being converted to fixed prior to being implemented
 	
 	for(i = 0; i < 100; i++){
-		cubePositions[i].x = (float)(250 - (rand() % 500));
-		cubePositions[i].y = (float)(250 - (rand() % 500));
-		cubePositions[i].z = (float)(250 - (rand() % 500));
-		cubeRotations[i].x = (float)(rand() % 360);
-		cubeRotations[i].y = (float)(rand() % 360);
-		cubeRotations[i].z = (float)(rand() % 360);
+		cubePositions[i].x = (float)((i % 10) * 20.0f);
+		cubePositions[i].y = (float)(0.0f);
+		cubePositions[i].z = (float)((i / 10) * 20.0f);
+		cubeRotations[i].x = (float)(0.0f);
+		cubeRotations[i].y = (float)(0.0f);
+		cubeRotations[i].z = (float)(0.0f);
 	}
 	
 	camPos.x = 0.0f;
@@ -141,9 +145,9 @@ int main() {
 	
 	while(1) {
 		
-		glLight(0, RGB15(31,0,0) , 0,				  floattov10(-1.0),		 0);
-		glLight(1, RGB15(0,31,0),   0,				  floattov10(1) - 1,			 0);
-		glLight(2, RGB15(0,0,31) ,   floattov10(-1.0), 0,					 0);
+		glLight(0, RGB15(31,31,31) , 0,				  floattov10(-1.0),		 0);
+		glLight(1, RGB15(31,31,31),   0,				  floattov10(1) - 1,			 0);
+		glLight(2, RGB15(31,31,31) ,   floattov10(-1.0), 0,					 0);
 		glLight(3, RGB15(31,31,31) ,   floattov10(1.0) - 1,  0,					 0);
 
 		glMaterialf(GL_AMBIENT, RGB15(8,8,8));
@@ -155,8 +159,6 @@ int main() {
 		glMaterialShinyness();
 
 		//not a real gl function and will likely change
-		glPolyFmt(POLY_ALPHA(31) | POLY_CULL_NONE | POLY_FORMAT_LIGHT0 | POLY_FORMAT_LIGHT1 | 
-													POLY_FORMAT_LIGHT2 | POLY_FORMAT_LIGHT3 ) ;
 		
 		scanKeys();
 		
@@ -191,7 +193,43 @@ int main() {
 		glLoadIdentity();
 		gluPerspective(70, 256.0 / 192.0, 0.1, 10000);
 
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();
+
+		glPolyFmt(POLY_ALPHA(31) | POLY_CULL_FRONT | POLY_FORMAT_LIGHT0 | POLY_FORMAT_LIGHT1 | POLY_FORMAT_LIGHT2 | POLY_FORMAT_LIGHT3 ) ;
+
+		uvIncreaseTimer++;
+		if(uvIncreaseTimer == 3){
+			uvIncreaseTimer = 0;
+			k++;
+			if(k > 15) k = 0;
+			uv[0] = TEXTURE_PACK(inttot16(k + 16), 0);
+			uv[1] = TEXTURE_PACK(inttot16(k + 16), inttot16(16));
+			uv[2] = TEXTURE_PACK(inttot16(k), inttot16(16));
+			uv[3] = TEXTURE_PACK(inttot16(k), 0);
+		}
+
 		//draw the obj
+		glBegin(GL_QUAD);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+			
+		gluLookAt(camPos.x, camPos.y, camPos.z,		//camera possition 
+				camLook.x, camLook.y, camLook.z,		//look at
+				0.0, 1.0, 0.0);		//up
+			
+		//move it away from the camera
+		glTranslatef(camPos.x, camPos.y, camPos.z);
+		
+		glScalef(500.0f, 500.0f, 500.0f);
+	
+		for(j = 0; j < 6; j++){
+			drawQuad(j);
+		}
+		glEnd();
+		
+		glPolyFmt(POLY_ALPHA(31) | POLY_CULL_BACK | POLY_FORMAT_LIGHT0 | POLY_FORMAT_LIGHT1 | POLY_FORMAT_LIGHT2 | POLY_FORMAT_LIGHT3 ) ;
+		
 		glBegin(GL_QUAD);
 		for(i = 0; i < 100; i++){
 			glMatrixMode(GL_MODELVIEW);
@@ -209,19 +247,40 @@ int main() {
 			glRotateZ(cubeRotations[i].z);
 			
 			glScalef(20.0f, 20.0f, 20.0f);
-			
-			glMatrixMode(GL_TEXTURE);
-			glLoadIdentity();
 		
 			for(j = 0; j < 6; j++){
 				drawQuad(j);
 			}
 		}
-		
 		glEnd();
 			
 		glFlush(0);
+		
+		consoleClear();
+		char tempText[256];
+		sprintf(tempText, "(%g, %g, %g)", camPos.x, camPos.y, camPos.z);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "(%g, %g, %g)", camFace.x, camFace.y, camFace.z);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "(%g, %g, %g)", camLook.x, camLook.y, camLook.z);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "%g", camRot);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "%d", k);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "%d", uvIncreaseTimer);
+		iprintf("%s\n", tempText);
+		iprintf("\n", tempText);
+		sprintf(tempText, "(%x, %x)", (uv[0] & 0xFFFF0000) >> 16, uv[0] & 0x0000FFFF);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "(%x, %x)", (uv[1] & 0xFFFF0000) >> 16, uv[1] & 0x0000FFFF);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "(%x, %x)", (uv[2] & 0xFFFF0000) >> 16, uv[2] & 0x0000FFFF);
+		iprintf("%s\n", tempText);
+		sprintf(tempText, "(%x, %x)", (uv[3] & 0xFFFF0000) >> 16, uv[3] & 0x0000FFFF);
+		iprintf("%s\n", tempText);
 
+		swiWaitForVBlank();
 		swiWaitForVBlank();
 
 		if(keys & KEY_START) break;
