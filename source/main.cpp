@@ -4,9 +4,6 @@
 
 #include <math.h>
 
-//texture_bin.h is created automagicaly from the texture.bin placed in arm9/resources
-//texture.bin is a raw 128x128 16 bit image.  I will release a tool for texture conversion 
-//later
 #include "texture.h"
 
 
@@ -40,17 +37,14 @@ u8 CubeFaces[] = {
 };
 
 //texture coordinates
-u32 uv[] =
-{
-	
+u32 uv[] = {
 	TEXTURE_PACK(inttot16(16), 0),
 	TEXTURE_PACK(inttot16(16),inttot16(16)),
 	TEXTURE_PACK(0, inttot16(16)),
 	TEXTURE_PACK(0,0)
 };
 
-u32 normals[] =
-{
+u32 normals[] = {
 	NORMAL_PACK(0,floattov10(-.97),0),
 	NORMAL_PACK(0,0,floattov10(.97)),
 	NORMAL_PACK(floattov10(.97),0,0),
@@ -61,9 +55,7 @@ u32 normals[] =
 };
 
 //draw a cube face at the specified color
- void drawQuad(int poly)
-{	
-	
+void drawQuad(int poly) {	
 	u32 f1 = CubeFaces[poly * 4] ;
 	u32 f2 = CubeFaces[poly * 4 + 1] ;
 	u32 f3 = CubeFaces[poly * 4 + 2] ;
